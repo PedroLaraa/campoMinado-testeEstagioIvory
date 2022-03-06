@@ -16,40 +16,108 @@
             
             // Realize sua codificação a partir deste ponto, boa sorte!
 
-            var aux = new CampoMinado; // Cria um jogo extra para conferências
+            var bombas = [];
+            var tabuleiro;
 
-            var cont = -1; // Contador para facilitar o percorrimento das strings
 
-            // Dois laços (for) para simular o percorrimento de uma matriz
-            for(var x = 1; x < 11; x++){
-                for(var y = 1; y < 11; y++){
+            while ( campoMinado.JogoStatus() == 0 ) {
+                atualizarTabuleiro();
+                mostrarStatus();
+                resolver();
+            }
+            mostrarStatus();
 
-                    if(aux.Tabuleiro()[cont+x] == "-"){ // Filtro para abrir soomente células fechadas no jogo extra
-                        aux.Abrir(x, y) // Método que abre células
-                        
-                        if(aux.Tabuleiro()[cont+x] != "*"){ // Filtra as casas com bombas para não serem abertas
-                            
-                            if(campoMinado.Tabuleiro()[cont+x] == "-"){ // Células que estão fechadas podem ser abertas
-                                document.getElementById('exibir-execucao').innerHTML += 'Abrindo Casa: Linha (' + x + ') Coluna ('+ y + ')' + '</br>';
-                                campoMinado.Abrir(x,y); // Abre células no jogo principal
-                                document.getElementById('exibir-execucao').innerHTML += '<pre>' + campoMinado.Tabuleiro() + '</pre>'
 
-                                if(campoMinado.JogoStatus() == 0){ // Para cada execução do laço é exibida a execução
-                                    document.getElementById('exibir-execucao').innerHTML += '----------- Jogo em aberto -----------' + '</br>';
-                                }else if(campoMinado.JogoStatus() == 2){ // Caso falhe é exibido a derrota
-                                    document.getElementById('exibir-execucao').innerHTML += '----------- Derrota! -----------' + '</br>';
-                                }
-                            }
-                        }else{
-                            document.getElementById('exibir-execucao').innerHTML += 'Bomba encontrada: Linha ('+ x +') Coluna('+ y +')' + '</br>';
-                        }
-                    }cont++
+
+            // Pega as posições que possuem bombas
+
+            function atualizarTabuleiro ( ) {
+                tabuleiro = campoMinado.Tabuleiro();
+                for ( let bomba = 0; bomba < bombas.length; bomba++) {
+                    marcarBomba(11*bombas[bomba][0]+bombas[bomba][1]);
                 }
             }
-            if(campoMinado.JogoStatus()==1){ // Caso verdadeiro é exibida a vitóoria e o tabuleiro completo
-                document.getElementById('exibir-execucao').innerHTML += '----------- Vitória! -----------' + '</br>';
-                document.getElementById('exibir-execucao').innerHTML += '<pre>' + campoMinado.Tabuleiro() + '</pre>';
+
+            // Mostra o tabuleiro atualizado e o resultaddo do jogo
+
+            function mostrarStatus ( ) {
+                if ( campoMinado.JogoStatus() == 0 )
+                    document.getElementById('exibir-execucao').innerHTML += '----------- Jogo em aberto -----------';
+                else if ( campoMinado.JogoStatus() == 1 )
+                    document.getElementById('exibir-execucao').innerHTML += '----------- Vitoria -----------';
+                else if ( campoMinado.JogoStatus() == 2 )
+                    document.getElementById('exibir-execucao').innerHTML += '----------- Derrota -----------';
+                document.getElementById('exibir-execucao').innerHTML += '<pre>' + campoMinado.Tabuleiro() + '</pre>'
+                //imprimirTabuleiro();
             }
+
+            // Substitui na string do tabuleiro a posicao passada como parametro por um '*'
+            
+            function marcarBomba (pos) {
+                tabuleiro = tabuleiro.substring(0, pos) + '*' + tabuleiro.substring(pos+1, tabuleiro.length);
+            } 
+
+
+            // Exerce a lóogica do jogo para resolver o problema, abrino casas sem bombas
+
+            function resolver ( ) {
+                for ( let x = 0; x < 9; x++ ) {
+                    for ( let y = 0; y < 9; y++ ) {
+                        if ( tabuleiro[11*x+y] >= 1 && tabuleiro[11*x+y] <= 8 ) {
+                            let naoAbertas = [];
+                            let bombasCasaAtual = [];
+                            let quantidadeNaoAbertas = 0;
+                            let quantidadeBombas = 0;
+                            for ( let i = x-1; i < x+2; i++ ) {
+                                for ( let j = y-1; j < y+2; j++ ) {
+                                    if ( i >= 0 && j >= 0 && i < 9 && j < 9 ) {
+                                        if ( tabuleiro[11*i+j] == '-' ) {
+                                            quantidadeNaoAbertas++;
+                                            naoAbertas.push([i,j]);
+                                        }
+                                        else if ( tabuleiro[11*i+j] == '*' ) {
+                                            quantidadeBombas++;
+                                            bombasCasaAtual.push([i,j]);
+                                        }
+                                    }
+                                }
+                            }
+                            if ( quantidadeNaoAbertas + quantidadeBombas == tabuleiro[11*x+y] ) {
+                                for (let pos = naoAbertas.shift(); quantidadeNaoAbertas > 0; pos = naoAbertas.shift(), quantidadeNaoAbertas--) {
+                                    i = pos[0];
+                                    j = pos[1];
+                                    if ( tabuleiro[11*i+j] == '-' ) {
+                                        document.getElementById('exibir-execucao').innerHTML += `<p>Bomba encontrada: linha(${i+1}) / coluna(${j+1})</p>`
+                                        marcarBomba(11*i+j);
+                                        bombas.push([i, j]);
+                                    }
+                                }
+                            }
+                            if ( quantidadeBombas == tabuleiro[11*x+y] ) {
+                                for ( let pos = naoAbertas.shift(); quantidadeNaoAbertas > 0; pos = naoAbertas.shift(), quantidadeNaoAbertas--) {
+                                    i = pos[0];
+                                    j = pos[1];
+                                    document.getElementById('exibir-execucao').innerHTML += `<p>Abrindo casa: linha(${i+1}) / coluna(${j+1})</p>`
+                                    campoMinado.Abrir(i+1,j+1);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            
+            //  Imprime (*) no lugar as bombas
+            
+            function imprimirTabuleiro ( ) {
+                for ( let i = 0; i < 9; i++ ) {
+                document.getElementById('exibir-execucao').innerHTML += '<br>';
+                    for ( let j = 0; j < 9; j++ ) {
+                        document.getElementById('exibir-execucao').innerHTML += `${tabuleiro[11*i+j]}`;
+                    }
+                }
+            }
+
 
         </script>
     </body>
